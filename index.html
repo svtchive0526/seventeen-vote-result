@@ -28,7 +28,7 @@ function render(category){
  const announcement=category==='lower'?'11월 13일 금요일 저녁에 공개됩니다!':'11월 14일 토요일 저녁에 공개됩니다!';
  for(const item of results.filter(x=>x.rank>=start&&x.rank<=end)){
   const entry=document.createElement('article');entry.className='entry';
-  const previous=!reveal?announcement:item.previous==='미확인'?'이번 총선에서 새롭게 진입했어요!':`지난 4월 총선 ${item.previous}위 (${Number(item.previous)>item.rank?`${Number(item.previous)-item.rank}계단 상승!`:Number(item.previous)<item.rank?`${item.rank-Number(item.previous)}계단 하락!`:'순위 유지!'})`;
+  const previous=!reveal?announcement:item.previous==='미확인'?'이번 총선에서 새롭게 진입했어요!':`지난 4월 총선 ${item.previous}위 (${Number(item.previous)>item.rank?`${Number(item.previous)-item.rank}계단 상승`:Number(item.previous)<item.rank?`${item.rank-Number(item.previous)}계단 하락`:'순위 유지'})`;
   entry.innerHTML=`<div class="rank-card"><div class="rank">${item.rank}</div><div class="song-info"><div class="song-line"><div class="song"></div><button class="trend-toggle" type="button" aria-expanded="false">순위추이보기</button></div><div class="previous"></div></div><div class="total"><strong>${item.total}</strong><span>점</span></div></div><div class="round-grid">${item.scores.map((s,i)=>`<div class="round"><div class="score">${s}</div><div class="round-label">${i+1}라운드</div></div>`).join('')}</div><div class="trend-panel" hidden><div class="trend-head"><span class="trend-song"></span><div class="trend-head-right"><span>2026 전곡총선 라운드 순위 추이</span><button class="close-trend" type="button">닫기</button></div></div><div class="chart-wrap">${chartMarkup(item.trend)}</div></div>`;
   entry.querySelector('.song').textContent=item.song;
   entry.querySelector('.previous').textContent=previous;
