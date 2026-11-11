@@ -65,6 +65,10 @@ function chartMarkup(values){
   return `<svg viewBox="0 0 526 260" role="img" aria-label="라운드별 누적 순위: ${values.map((v,i)=>`${i+1}라운드 ${v}위`).join(', ')}"><g>${grids}</g><path class="chart-line" d="${path}"/>${markers}<line class="chart-baseline" x1="10" x2="516" y1="222" y2="222"/>${labels}</svg>`;
 }
 
+// A participant may see only the one song they selected, even before the public reveal.
+function isPersonalPreviewRank(rank){
+ try{return localStorage.getItem('svtchive-2026-one-song-preview-v1')===String(rank)}catch(e){return false}
+}
 function render(category){
  root.replaceChildren();
  const bounds={debut:[1,13],mid:[14,50],lower:[51,100],outside:[101,120]};
@@ -74,8 +78,10 @@ function render(category){
  const announcement=category==='lower'?'11월 13일 금요일 저녁 8시에 공개됩니다!':category==='mid'?'11월 14일 토요일 저녁 7시 30분에 공개됩니다!':'11월 14일 토요일 저녁 8시에 공개됩니다!';
  for(const item of results.filter(x=>x.rank>=start&&x.rank<=end)){
   const entry=document.createElement('article');entry.className='entry';
-  const shown=reveal&&item.rank<=100?secretSongs[item.rank]:item;
-  const previous=!reveal?announcement:shown.previous==='미확인'?'이번 총선에서 새롭게 진입했어요!':`지난 4월 총선 ${shown.previous}위 (${Number(shown.previous)>item.rank?`${Number(shown.previous)-item.rank}계단 상승`:Number(shown.previous)<item.rank?`${item.rank-Number(shown.previous)}계단 하락`:'순위 유지'})`;
+  const personallyRevealed=isPersonalPreviewRank(item.rank);
+  const visible=reveal||personallyRevealed;
+  const shown=visible&&item.rank<=100?secretSongs[item.rank]:item;
+  const previous=!visible?announcement:shown.previous==='미확인'?'이번 총선에서 새롭게 진입했어요!':`지난 4월 총선 ${shown.previous}위 (${Number(shown.previous)>item.rank?`${Number(shown.previous)-item.rank}계단 상승`:Number(shown.previous)<item.rank?`${item.rank-Number(shown.previous)}계단 하락`:'순위 유지'})`;
   entry.innerHTML=`<div class="rank-card"><div class="rank-column"><div class="rank">${item.rank}</div><button class="share-rank" type="button" aria-label="${item.rank}위 공유">공유</button></div><div class="song-info"><div class="song-line"><div class="song"></div><button class="trend-toggle" type="button" aria-expanded="false">순위추이보기</button></div><div class="previous"></div></div><div class="total"><strong>${item.total}</strong><span>점</span></div></div><div class="round-grid">${item.scores.map((s,i)=>`<div class="round"><div class="score">${s}</div><div class="round-label">${i+1}라운드</div></div>`).join('')}</div><div class="trend-panel" hidden><div class="trend-head"><span class="trend-song"></span><div class="trend-head-right"><span>2026 전곡총선 라운드 순위 추이</span><button class="close-trend" type="button">닫기</button></div></div><div class="chart-wrap">${chartMarkup(item.trend)}</div></div>`;
   entry.querySelector('.song').textContent=shown.song;
   entry.querySelector('.previous').textContent=previous;
@@ -85,7 +91,7 @@ function render(category){
   const shareButton=entry.querySelector('.share-rank');
   if(shareButton){shareButton.addEventListener('click',()=>{
     let message;
-    if(!reveal){
+    if(!visible){
       message=`💎 2026 셉카이브 배 세븐틴 전곡 총선\n\n🎵 무슨 곡일까요?\n🏆 최종 순위 : ${item.rank}위\n📊 최종 점수 : ${item.total.toLocaleString('ko-KR')}점\n\n총선 순위 보러가기\nhttps://tinyurl.com/2026SVTresult01\n\n#세븐틴 #SEVENTEEN @pledis_17`;
     }else{
       const change=shown.previous==='미확인'?'이번 총선에서 새롭게 진입':Number(shown.previous)>item.rank?`${Number(shown.previous)-item.rank}계단 상승`:Number(shown.previous)<item.rank?`${item.rank-Number(shown.previous)}계단 하락`:'순위 유지';
@@ -157,22 +163,20 @@ previewForm.addEventListener('submit',event=>{
  const item=matches[0];
  try{localStorage.setItem(previewKey,String(item.rank))}catch(e){showPreviewMessage('참여 기록을 저장할 수 없어요. 브라우저 설정을 확인해 주세요.',true);return}
  setPreviewChoice(item);
+ render(activeCategory);
 });
 previewShare.addEventListener('click',()=>{
  if(!previewChoice)return;
  const item=previewChoice;
  const message=`💎 2026 셉카이브 배 세븐틴 전곡 총선
-: 원하는 한 곡만 순위 미리보기 이벤트!
+: 원하는 한 곡 순위 미리보기 이벤트!
 
 🎵 ${item.song}
 🏆 최종 순위 : ${item.rank}위
-📊 최종 점수 : ${item.total.toLocaleString('ko-KR')}점
 📈 지난 4월 총선 대비 : ${previewChange(item)}
 
 순위 보고 이벤트 참여하기
-https://tinyurl.com/2026SVTresult01
-
-#세븐틴 #SEVENTEEN @pledis_17`;
+https://tinyurl.com/2026SVTresult01`;
  window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(message),'_blank','noopener,noreferrer');
 });
 previewBottom.addEventListener('click',closePreview);
